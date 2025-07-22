@@ -14,7 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_code: string | null
+          bank_name: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_code?: string | null
+          bank_name: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_code?: string | null
+          bank_name?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          full_name: string | null
+          has_paid_verification: boolean | null
+          id: string
+          is_verified: boolean | null
+          phone_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          full_name?: string | null
+          has_paid_verification?: boolean | null
+          id: string
+          is_verified?: boolean | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          full_name?: string | null
+          has_paid_verification?: boolean | null
+          id?: string
+          is_verified?: boolean | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          recipient_account: string | null
+          recipient_bank: string | null
+          recipient_name: string | null
+          reference: string | null
+          status: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          recipient_account?: string | null
+          recipient_bank?: string | null
+          recipient_name?: string | null
+          reference?: string | null
+          status?: string | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          recipient_account?: string | null
+          recipient_bank?: string | null
+          recipient_name?: string | null
+          reference?: string | null
+          status?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
