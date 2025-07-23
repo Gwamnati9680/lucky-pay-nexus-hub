@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Shield, Phone, Mail, Lock, User } from 'lucide-react';
+import { Wallet, Shield, Phone, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -15,6 +16,8 @@ const Auth = () => {
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [authError, setAuthError] = useState('');
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -25,16 +28,89 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
+  // Clear errors when switching between tabs
+  useEffect(() => {
+    setErrors({});
+    setAuthError('');
+  }, [isSignUp]);
+
+  // Enhanced validation functions
+  const validateEmail = (email: string): string => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) return 'Email is required';
+    if (!emailRegex.test(email)) return 'Please enter a valid email address';
+    return '';
+  };
+
+  const validatePassword = (password: string): string => {
+    if (!password) return 'Password is required';
+    if (password.length < 8) return 'Password must be at least 8 characters long';
+    if (!/(?=.*[a-z])/.test(password)) return 'Password must contain at least one lowercase letter';
+    if (!/(?=.*[A-Z])/.test(password)) return 'Password must contain at least one uppercase letter';
+    if (!/(?=.*\d)/.test(password)) return 'Password must contain at least one number';
+    if (!/(?=.*[@$!%*?&])/.test(password)) return 'Password must contain at least one special character (@$!%*?&)';
+    return '';
+  };
+
+  const validatePhone = (phone: string): string => {
+    const phoneRegex = /^(\+234|234|0)[789][01]\d{8}$/; // Nigerian phone number format
+    if (!phone) return 'Phone number is required';
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      return 'Please enter a valid Nigerian phone number (e.g., +2348012345678)';
+    }
+    return '';
+  };
+
+  const validateFullName = (name: string): string => {
+    if (!name) return 'Full name is required';
+    if (name.trim().length < 2) return 'Full name must be at least 2 characters';
+    if (!/^[a-zA-Z\s]+$/.test(name)) return 'Full name should only contain letters and spaces';
+    return '';
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: {[key: string]: string} = {};
+    
+    newErrors.email = validateEmail(email);
+    newErrors.password = validatePassword(password);
+    
+    if (isSignUp) {
+      newErrors.phone = validatePhone(phone);
+      newErrors.fullName = validateFullName(fullName);
+    }
+
+    // Remove empty error messages
+    Object.keys(newErrors).forEach(key => {
+      if (!newErrors[key]) delete newErrors[key];
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
+      let result;
       if (isSignUp) {
-        await signUp(email, password, phone, fullName);
+        result = await signUp(email, password, phone, fullName);
       } else {
-        await signIn(email, password);
+        result = await signIn(email, password);
       }
+      
+      if (result?.error) {
+        setAuthError(result.error.message || 'Authentication failed. Please try again.');
+      }
+    } catch (error: any) {
+      setAuthError(error.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -66,6 +142,13 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {authError && (
+              <Alert className="mb-4" variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            )}
+            
             <Tabs value={isSignUp ? 'signup' : 'signin'} onValueChange={(value) => setIsSignUp(value === 'signup')}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -84,10 +167,13 @@ const Auth = () => {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -100,10 +186,13 @@ const Auth = () => {
                         placeholder="Enter your password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
+                    {errors.password && (
+                      <p className="text-sm text-destructive">{errors.password}</p>
+                    )}
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={loading}>
@@ -124,10 +213,13 @@ const Auth = () => {
                         placeholder="Enter your full name"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.fullName ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
+                    {errors.fullName && (
+                      <p className="text-sm text-destructive">{errors.fullName}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -140,10 +232,13 @@ const Auth = () => {
                         placeholder="Enter your phone number"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">{errors.phone}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -156,10 +251,13 @@ const Auth = () => {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -172,10 +270,13 @@ const Auth = () => {
                         placeholder="Create a password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
+                    {errors.password && (
+                      <p className="text-sm text-destructive">{errors.password}</p>
+                    )}
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={loading}>
